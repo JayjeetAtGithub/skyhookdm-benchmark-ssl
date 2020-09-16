@@ -1,1 +1,2 @@
-  * Benchmarked with 10MB objects
+ * Object size: 10MB
+ * Threads: 48
