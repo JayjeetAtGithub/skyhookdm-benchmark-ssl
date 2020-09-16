@@ -1,5 +1,5 @@
 The file names are of the format
 
 ```
-fio-<workload-type>-<iodepth>-<blkdevice>-<numjobs>-<timestamp>.png
+fio-<workloadtype>-<iodepth>-<blkdevice>-<blksize>-<numjobs>-<timestamp>.png
 ```
