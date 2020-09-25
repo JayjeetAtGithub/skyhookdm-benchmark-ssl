@@ -46,6 +46,15 @@ We are developing custom user-defined functions (UDFs) to enable domain-specific
 SkyhookDM also enables data management tasks to be executed directly within storage such as local indexing and data redistribution or reformatting (row/col) to support dynamic data management in the cloud.  
 These tasks operate directly on objects at the single object or cross-object level.
 
+## Rook
+
+Rook is an open source cloud-native storage orchestrator for Kubernetes, providing the platform, framework, and support for a diverse set of storage solutions to natively integrate with cloud-native environments.
+Rook turns storage software into self-managing, self-scaling, and self-healing storage services. 
+It does this by automating deployment, bootstrapping, configuration, provisioning, scaling, upgrading, migration, disaster recovery, monitoring, and resource management. 
+Rook uses the facilities provided by the underlying cloud-native container management, scheduling and orchestration platform to perform its duties.
+Rook integrates deeply into cloud-native environments leveraging extension points and providing a seamless experience for scheduling, lifecycle management, resource management, security, monitoring, and user experience.
+Rook is hosted by the Cloud Native Computing Foundation (CNCF) as an incubating level project.
+
 ## Kubernetes
 
 Kubernetes [@kubernetes_google] is a production-grade open-source container orchestration system written in Golang that automates many of the manual processes involved in deploying, scaling, and managing of containerized applications across a cluster of hosts. 
@@ -87,7 +96,7 @@ We used Prometheus [@turnbull2018monitoring] and Grafana [@brattstrom2017scalabl
 After a Kubernetes cluster is available, benchmarking the cluster is necessary to have a baseline so that the overheads of the applications deployed on it later can be estimated.
 In the case of storage systems, usually the Disks or the Network stack act as the sources of bottlenecks.
 So, we implemented workflows to baseline a Kubernetes cluster in terms of the Disk and Network bandwidth of the underlying nodes.
-Kubestone, which is a benchmarking operator for Kubernetes, was used in these workflows as it provides operators for running blockdevice tests with `fio` and Network benchmarks using `iperf`. 
+Kubestone [@kubestone], which is a benchmarking operator for Kubernetes, was used in these workflows as it provides operators for running blockdevice tests with `fio` and Network benchmarks using `iperf`. 
 
 The fio benchmark workflow launches client pods on different nodes and benchmarks the R/W bandwidth of the blockdevices while performing parameter sweeps over IO depth, job count, block size, etc. 
 The parameter sweeps allow capturing performance variation with different parameters, where the different sets of parameters can be mapped to real workloads while running Ceph benchmarks.
@@ -103,7 +112,7 @@ Although the theoretical bandwidth of the inter-node links was 10 Gb/s, the meas
 
 ## Benchmarking the Ceph Object Store Interface, RADOS
 
-Ceph was deployed on our Kubernetes cluster using Rook, which is a cloud-native storage orchestrator for Kubernetes to make storage systems self-healing, self-managing and self-scaling. 
+Ceph was deployed on our Kubernetes cluster using Rook [@rook], which is a cloud-native storage orchestrator for Kubernetes to make storage systems self-healing, self-managing and self-scaling. 
 Rook deploys and manages the Ceph daemons like OSDs, MONs, etc. as pods. 
 Our Ceph deployment comprised of 3 MONs and 4 OSDs, where each OSD was deployed on a distinct node and on a single blockdevice. 
 To find out the R/W throughput of the Ceph object store, the overhead it incurs on the raw blockdevices, and the component that becomes the bottleneck, we benchmarked RADOS [@weil2007rados], the object store interface of Ceph using the `rados bench` utility provided by Ceph.
@@ -144,7 +153,7 @@ We start by describing Popper and how it helps in building automated and reprodu
 We discuss the different stages in a Ceph experimentation workflow and also present and discuss the observations of running the benchmarks on our Ceph and SkyhookDM deployments.
 
 As future work, we aim to add workflows to automate other categories of Ceph benchmarks like CephFS and RBD benchmarks.
-Since this project explores the possibilities of making systems research automated and reproducible, we look forward to automate experiments on other popular systems for e.g. key-value stores like RocksDB, databases like ScyllaDB, etc.  
+Since this project explores the possibilities of making systems research automated and reproducible, we look forward to "Popperize" experiments on other popular systems for e.g. key-value stores like RocksDB, databases like ScyllaDB, etc.  
 
 <!--
 TODO: 
