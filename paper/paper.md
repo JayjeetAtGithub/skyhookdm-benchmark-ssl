@@ -5,6 +5,12 @@ author:
   affiliation: UC Santa Cruz
 ---
 
+# Introduction
+
+This work was done as a part of the IRIS-HEP Fellowship for Summer 2020 in collaboration with CROSS, UCSC.
+The project was aimed at automating the SkyhookDM experimentation workflow using Popper and benchmarking a SkyhookDM deployment by running queries on large datasets.
+The code for this project can be found [here](https://github.com/uccross/skyhookdm-workflows).
+
 # The Problem and Our Solution {#sec:probsol}
 
 For someone getting started in experimenting with Ceph, it can be a bit overwhelming as there are a lot of steps that one needs to execute and get right before they run some actual experiments and get results. 
@@ -18,7 +24,7 @@ In a high-level, the steps that are generally included in a Ceph experimentation
 * Writing Jupyter notebooks and plotting graphs.
 
 If executed manually, these steps can require typing in 100s of commands interactively which is cumbersome and error-prone. 
-Since Popper [@popperpaper] is good at automating experimentation workflows following a reproducible approach, we felt that automating this complex scenario can be a good use case for Popper and would lower the entry barrier for new Ceph researchers. 
+Since Popper [@popperpaper] [@systemslabpopper] is good at automating experimentation workflows following a reproducible [@reproducibility2018acm] approach, we felt that automating this complex scenario can be a good use case for Popper and would lower the entry barrier for new Ceph researchers. 
 Using Popper, we coalesced a long list of Ceph experimentation commands and guides into a couple of Popper workflows, that can be easily executed on any machine to perform Ceph experiments, thus automating all the wasteful manual work and allowing researchers to focus on their experimentation logic instead. 
 Besides workflows for baselining the Kubernetes and Ceph cluster, we also built workflows to benchmark the performance of SkyhookDM, a library that when added to Ceph allows pushing down queries to the storage and querying tabular data from objects.
 We measured the performance gained by pushing down query processing to the storage side and also the overhead of the SkyhookDM layer over vanilla Ceph.
@@ -27,13 +33,13 @@ We measured the performance gained by pushing down query processing to the stora
 
 ## Ceph
 
-Ceph is an open-source software storage platform, implements object storage on a single distributed computer cluster, and provides a 3 in 1 interface for: object, block, and file-level storage. 
+Ceph [@weil2006ceph] is an open-source software storage platform, implements object storage on a single distributed computer cluster, and provides a 3 in 1 interface for: object, block, and file-level storage. 
 Ceph allows decoupling data from physical hardware storage, using software abstraction layers, providing scaling and fault management capabilities. 
 This makes Ceph ideal for cloud, Openstack, Kubernetes, and other microservice and container-based workloads as it can effectively address large data volume storage needs.
 
 ## SkyhookDM
 
-SkyhookDM is a cloud storage system that leverages "programmable storage" capabilities to enhance data management directly within the storage layer of a distributed object storage system such as Ceph. 
+SkyhookDM [@lefevre2020skyhookdm] is a cloud storage system that leverages "programmable storage" capabilities to enhance data management directly within the storage layer of a distributed object storage system such as Ceph. 
 The goal of Skyhook is to allow users to transparently grow and shrink their data storage and processing needs as demands change.  
 Skyhook utilizes and extends Ceph distributed object storage with customized C++ "object classes" that enable database operations such as SELECT, PROJECT, AGGREGATE to be offloaded (i.e., pushed down) directly into the object storage layer.  
 We are developing custom user-defined functions (UDFs) to enable domain-specific processing as well. 
@@ -42,7 +48,7 @@ These tasks operate directly on objects at the single object or cross-object lev
 
 ## Kubernetes
 
-Kubernetes is a production-grade open-source container orchestration system written in Golang that automates many of the manual processes involved in deploying, scaling, and managing of containerized applications across a cluster of hosts. 
+Kubernetes [@kubernetes_google] is a production-grade open-source container orchestration system written in Golang that automates many of the manual processes involved in deploying, scaling, and managing of containerized applications across a cluster of hosts. 
 A cluster can span hosts across public, private, or hybrid clouds. 
 This makes Kubernetes an ideal platform for hosting cloud-native applications. 
 Kubernetes supports a wide range of container runtimes including Docker, Rkt, and Podman. 
@@ -54,7 +60,7 @@ Many cloud providers like GCP, AWS, and Azure provide a completely managed and s
 In general, researchers and developers often end up typing a long list of commands in their terminal to build, deploy, and experiment with complex software systems. 
 The process is highly manual and needs a lot of expertise or can lead to frustration because of missing dependencies and errors. 
 The problem of dependency management can be addressed by moving the entire software development life cycle inside software containers. 
-This is known as container-native development. 
+This is known as container-native development [@containernative]. 
 In practice, when developers work following the container-native paradigm, they end up interactively executing multiple docker pull|build|run commands in order to build containers, compile code, test applications, deploy software, etc. 
 Keeping track of which docker commands were executed, in which order, and which flags were passed to each, can quickly become unmanageable, difficult to document (think of outdated README instructions), and error-prone. 
 
@@ -70,11 +76,11 @@ In this section, we discuss how the different stages of a Ceph experiment was au
 ## Setting Up a Kubernetes Cluster
 
 Managed Kubernetes clusters from Cloud providers like Google Kubernetes Engine from GCP, Elastic Kubernetes Service from AWS, etc. can be used.
-If CloudLab, the NSF sponsored experimentation testbed, is accessible, Popper workflows for spawning bare-metal nodes on CloudLab and deploying Kubernetes on them are available. 
+If CloudLab [@CloudLab], the NSF sponsored experimentation testbed, is accessible, Popper workflows for spawning bare-metal nodes on CloudLab and deploying Kubernetes on them are available. 
 The workflows leverage Geni-Lib to programmatically allocate nodes on CloudLab and use Kubespray to setup production-ready Kubernetes clusters. 
-In our case, we used the River SSL Kubernetes cluster at UChicago for setting up and benchmarking our Ceph clusters.
+In our case, we used the River SSL Kubernetes cluster at UChicago [@river] for setting up and benchmarking our Ceph clusters.
 Kubernetes clusters should ideally have a monitoring infrastructure setup to monitor several system parameters in real-time and also record them while running experiments. 
-We used Prometheus and Grafana to set up monitoring as they are the industry standards and hence wrote workflows for deploying their corresponding operators on a Kubernetes cluster.
+We used Prometheus [@turnbull2018monitoring] and Grafana [@brattstrom2017scalable] to set up monitoring as they are the industry standards and hence wrote workflows for deploying their corresponding operators on a Kubernetes cluster.
 
 ## Baselining the Kubernetes Cluster
 
@@ -87,7 +93,7 @@ The fio benchmark workflow launches client pods on different nodes and benchmark
 The parameter sweeps allow capturing performance variation with different parameters, where the different sets of parameters can be mapped to real workloads while running Ceph benchmarks.
 On running this workflow to benchmark the blockdevices in our Kubernetes deployment, the seq. read bandwidth was found to be ~410 MB/s on keeping the CPU busy with 8 fio jobs and an IO depth 32.
 
-![Sequential Read bandwidth of the SSD blockdevice](./figures/disk.png){#fig:disk .center height=35% width=50%}
+![Sequential Read bandwidth of the SSD blockdevice](./figures/disk.png){#fig:disk .center height=25% width=50%}
 
 Similarly, the iperf benchmark workflow launches client and server pods on distinct nodes to measure the bandwidth of the link between them.
 The link bandwidth between the node that was used as the client and the nodes that were used as the OSDs in our deployment was found to be around 8-8.5 Gb/s.
@@ -100,7 +106,7 @@ Although the theoretical bandwidth of the inter-node links was 10 Gb/s, the meas
 Ceph was deployed on our Kubernetes cluster using Rook, which is a cloud-native storage orchestrator for Kubernetes to make storage systems self-healing, self-managing and self-scaling. 
 Rook deploys and manages the Ceph daemons like OSDs, MONs, etc. as pods. 
 Our Ceph deployment comprised of 3 MONs and 4 OSDs, where each OSD was deployed on a distinct node and on a single blockdevice. 
-To find out the R/W throughput of the Ceph object store, the overhead it incurs on the raw blockdevices, and the component that becomes the bottleneck, we benchmarked RADOS, the object store interface of Ceph using the `rados bench` utility provided by Ceph.
+To find out the R/W throughput of the Ceph object store, the overhead it incurs on the raw blockdevices, and the component that becomes the bottleneck, we benchmarked RADOS [@weil2007rados], the object store interface of Ceph using the `rados bench` utility provided by Ceph.
 We ran the benchmarks by reading/writing objects of size 10MB using all the cores of the client. 
 We initially began the experiment with a single OSD and gradually scaled it up to 5 OSDs in order to capture the peak throughput and the throughput trend w.r.t OSD count.
 The OSD's disk became the bottleneck while running the benchmarks on a single OSD as the throughput was around 390 MB/s, which was not enough to saturate the network.
@@ -120,8 +126,8 @@ Only the link between the client and the OSDs was found to be saturated.
 
 The SkyhookDM cluster was benchmarked to find out the performance gained by pushing down query operations to the storage as compared to running queries on the client and also to find out the overhead of the SkyhookDM layer on Ceph.
 We updated our vanilla Ceph cluster to a SkyhookDM cluster using a Popper workflow, that updates the Ceph image in the Rook operator and updates the cluster config to load the SkyhookDM tabular libraries.
-For this experiment, 10000 objects each of size 10MB containing tabular data in Flatbuffer format were loaded into a pool that had replication disabled. 
-The total size of the resulting dataset size was around 210GB and comprised of 750M rows. 
+For this experiment, 10000 objects each of size 10MB containing tabular data in Flatbuffer [@fbx] format were loaded into a pool that had replication disabled. 
+The total size of the resulting dataset size was around 210 GB and comprised of 750M rows. 
 Queries were executed to select 1%, 10%, and 100% of the data with the query execution once on the client and once on the storage.
 As shown in @Fig:skyhook, the total time required for querying 1% and 10% of the data was significantly less when queries were pushed down and executed on the storage side. 
 This observation was quite expected as only a subset of the rows needed to be transferred through the network in case of push down. 
@@ -138,11 +144,10 @@ We start by describing Popper and how it helps in building automated and reprodu
 We discuss the different stages in a Ceph experimentation workflow and also present and discuss the observations of running the benchmarks on our Ceph and SkyhookDM deployments.
 
 As future work, we aim to add workflows to automate other categories of Ceph benchmarks like CephFS and RBD benchmarks.
+Since this project explores the possibilities of making systems research automated and reproducible, we look forward to automate experiments on other popular systems for e.g. key-value stores like RocksDB, databases like ScyllaDB, etc.  
 
 <!--
 TODO: 
-1) introduction
-2) Add more to future work
 3) Add more details about the workflows
 -->
 
