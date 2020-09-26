@@ -90,6 +90,36 @@ The workflows leverage Geni-Lib to programmatically allocate nodes on CloudLab a
 In our case, we used the River SSL Kubernetes cluster at UChicago [@river] for setting up and benchmarking our Ceph clusters.
 Kubernetes clusters should ideally have a monitoring infrastructure setup to monitor several system parameters in real-time and also record them while running experiments. 
 We used Prometheus [@turnbull2018monitoring] and Grafana [@brattstrom2017scalable] to set up monitoring as they are the industry standards and hence wrote workflows for deploying their corresponding operators on a Kubernetes cluster.
+The workflow for setting up monitoring is shown in @Lst:mon.
+
+```{#lst:mon .yaml caption="Popper workflow for setting up Monitoring."}
+options:
+  env:
+    KUBECONFIG: ./kubeconfig/config
+
+steps:
+- id: setup
+  uses: docker://bitnami/kubectl:1.17.4
+  runs: [bash, -euc]
+  args:
+  - |
+    kubectl create -f ./kube-prometheus/manifests/setup
+    until kubectl get servicemonitors --all-namespaces ; 
+    do date; 
+    sleep 1; 
+    echo ""; 
+    done
+    kubectl create -f ./kube-prometheus/manifests/
+
+- id: teardown
+  uses: docker://bitnami/kubectl:1.17.4
+  runs: [bash, -euc]
+  args:
+  - |
+    kubectl delete --ignore-not-found 
+    -f ./kube-prometheus/manifests/ 
+    -f ./kube-prometheus/manifests/setup
+```
 
 ## Baselining the Kubernetes Cluster
 
@@ -98,15 +128,103 @@ In the case of storage systems, usually the Disks or the Network stack act as th
 So, we implemented workflows to baseline a Kubernetes cluster in terms of the Disk and Network bandwidth of the underlying nodes.
 Kubestone [@kubestone], which is a benchmarking operator for Kubernetes, was used in these workflows as it provides operators for running blockdevice tests with `fio` and Network benchmarks using `iperf`. 
 
-The fio benchmark workflow launches client pods on different nodes and benchmarks the R/W bandwidth of the blockdevices while performing parameter sweeps over IO depth, job count, block size, etc. 
+The fio benchmark workflow shown in @Lst:fio, launches client pods on different nodes and benchmarks the R/W bandwidth of the blockdevices while performing parameter sweeps over IO depth, job count, block size, etc. 
 The parameter sweeps allow capturing performance variation with different parameters, where the different sets of parameters can be mapped to real workloads while running Ceph benchmarks.
 On running this workflow to benchmark the blockdevices in our Kubernetes deployment, the seq. read bandwidth was found to be ~410 MB/s on keeping the CPU busy with 8 fio jobs and an IO depth 32.
 
+```{#lst:fio .yaml caption="Popper workflow for Fio benchmarks."}
+options:
+  env:
+    KUBECONFIG: ./kubeconfig/config
+    BLOCKDEVICES: $_BLOCKDEVICES
+    BLOCKSIZE: '4k 32k 128k 1m 4m'
+    PV_SIZE: 4Gi
+    IO_DEPTH: '32'
+    DURATION: '120'
+    IO_ENGINE: libaio
+    NUM_JOBS: '8'
+    MODES: 'read write randread randwrite'
+    HOSTNAME: $_HOSTNAME
+
+steps:
+- id: bootstrap-config
+  uses: docker://biowdl/pyyaml:3.13-py37-slim
+  runs: [python]
+  args: [./kubestone_fio/scripts/bootstrap.py]
+
+- id: start
+  uses: docker://bitnami/kubectl:1.17.4
+  runs: [bash, -euc]
+  args:
+  - |
+    kubectl apply -n kubestone -f ./kubestone_fio/pv.yaml
+    kubectl apply -n kubestone -f ./kubestone_fio/pvc.yaml
+    kubectl apply -n kubestone -f ./kubestone_fio/job.yaml
+- id: run-benchmarks
+  uses: docker://bitnami/kubectl:1.17.4
+  runs: [./kubestone_fio/scripts/run_benchmarks.sh]
+
+- id: download-results
+  uses: docker://bitnami/kubectl:1.17.4
+  runs: [./kubestone_fio/scripts/download_results.sh]
+
+- id: plot-results
+  uses: docker://getpopper/fio-plot:3.12-2
+  runs: [./kubestone_fio/scripts/plot_results.sh]
+
+- id: teardown
+  uses: docker://bitnami/kubectl:1.17.4
+  runs: [bash, -euc]
+  args:
+  - |
+    kubectl delete -n kubestone -f ./kubestone_fio/job.yaml
+    kubectl delete -n kubestone -f ./kubestone_fio/pvc.yaml
+    kubectl delete -n kubestone -f ./kubestone_fio/pv.yaml
+```
+
 ![Sequential Read bandwidth of the SSD blockdevice](./figures/disk.png){#fig:disk .center height=25% width=50%}
 
-Similarly, the iperf benchmark workflow launches client and server pods on distinct nodes to measure the bandwidth of the link between them.
+Similarly, the iperf benchmark workflow shown in @Lst:iperf launches client and server pods on distinct nodes to measure the bandwidth of the link between them.
 The link bandwidth between the node that was used as the client and the nodes that were used as the OSDs in our deployment was found to be around 8-8.5 Gb/s.
 Although the theoretical bandwidth of the inter-node links was 10 Gb/s, the measured bandwidth was found slightly lower than it due to the overhead of the underlying Kubernetes network stack, which in this case was managed by Calico.
+
+
+```{#lst:iperf .yaml caption="Popper workflow for Iperf benchmarks."}
+options:
+  env:
+    KUBECONFIG: ./kubeconfig/config
+    SERVER: $_SERVER
+    CLIENT: $_CLIENT
+
+steps:
+- id: bootstrap-config
+  uses: docker://biowdl/pyyaml:3.13-py37-slim
+  runs: [python]
+  args: [./kubestone_iperf/scripts/bootstrap.py]
+
+- id: start
+  uses: docker://bitnami/kubectl:1.17.4
+  args: [apply, -n, kubestone, -f, 
+         ./kubestone_iperf/iperf.yaml]
+
+- id: download-results
+  uses: docker://bitnami/kubectl:1.17.4
+  runs: [./kubestone_iperf/scripts/download_results.sh]
+
+- id: plot-results
+  uses: docker://jupyter/datascience-notebook:python-3.8.5
+  runs: [jupyter]
+  args: ["nbconvert", "--execute", "--to=notebook", 
+         "./kubestone_iperf/notebook/plot.ipynb"]
+  options:
+    ports:
+      8888/tcp: 8888
+
+- id: teardown
+  uses: docker://bitnami/kubectl:1.17.4
+  args: [delete, -n, kubestone, -f, 
+         ./kubestone_iperf/iperf.yaml]
+```
 
 ![Bandwidth of the link between the Client and OSD nodes](./figures/network.png){#fig:network .center height=25% width=50%}
 
