@@ -1,8 +1,5 @@
 ---
 title: "Reproducible, Large-Scale Experiments with SkyhookDM using Popper"
-author:
-- name: Jayjeet Chakraborty, Carlos Maltzahn, Ivo Jimenez, Jeff LeFevre
-  affiliation: UC Santa Cruz
 ---
 
 # Introduction
