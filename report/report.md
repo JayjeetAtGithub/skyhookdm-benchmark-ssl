@@ -5,8 +5,8 @@ author: Jayjeet Chakraborty
 
 # Introduction
 
-This work was done as a part of the IRIS-HEP Fellowship for Summer 2020 under the mentorship of Carlos Maltzahn, Ivo Jimenez and Jeff LeFevre from CROSS, UC Santa Cruz.
-The project was aimed at automating the SkyhookDM experimentation workflow using Popper and benchmarking a SkyhookDM deployment by running queries on large datasets.
+This work was done as a part of the IRIS-HEP Fellowship for Summer 2020 under the mentorship of Carlos Maltzahn, Ivo Jimenez, and Jeff LeFevre from CROSS, UC Santa Cruz.
+The project was aimed at automating the SkyhookDM experimentation workflow using Popper and benchmarking a SkyhookDM deployment by running queries on tabular datasets.
 The code for this project can be found here [^project].
 
 [^project]: <https://github.com/uccross/skyhookdm-workflows/tree/master/rook>
@@ -14,7 +14,7 @@ The code for this project can be found here [^project].
 # The Problem and Our Solution {#sec:probsol}
 
 For someone getting started in experimenting with Ceph, it can be a bit overwhelming as there are a lot of steps that one needs to execute and get right before they run some actual experiments and get results. 
-In a high-level, the steps that are generally included in a Ceph experimentation workflow are listed below.
+At a high-level, the steps that are generally included in a Ceph experimentation workflow are listed below.
 
 * Booting up VMs or Bare metal nodes on Cloud providers like AWS, GCP, CloudLab, etc.
 * Deploying Kubernetes and baselining the cluster.
@@ -28,6 +28,7 @@ Since Popper [@popperpaper] [@systemslabpopper] is good at automating experiment
 Using Popper, we coalesced a long list of Ceph experimentation commands and guides into a couple of Popper workflows, that can be easily executed on any machine to perform Ceph experiments, thus automating all the wasteful manual work and allowing researchers to focus on their experimentation logic instead. 
 Besides workflows for baselining the Kubernetes and Ceph cluster, we also built workflows to benchmark the performance of SkyhookDM, a library that when added to Ceph allows pushing down queries to the storage and querying tabular data from objects.
 We measured the performance gained by pushing down query processing to the storage side and also the overhead of the SkyhookDM layer over vanilla Ceph.
+The workflows also allow users to scale the experiments as required by providing environment variables to control experiment specific parameters like the amount of data to run queries on, etc.
 
 # Background {#sec:background}
 
@@ -48,10 +49,10 @@ These tasks operate directly on objects at the single object or cross-object lev
 
 ## Rook
 
-Rook is an open source cloud-native storage orchestrator for Kubernetes, providing the platform, framework, and support for a diverse set of storage solutions to natively integrate with cloud-native environments.
+Rook is an open-source cloud-native storage orchestrator for Kubernetes, providing the platform, framework, and support for a diverse set of storage solutions to natively integrate with cloud-native environments.
 Rook turns storage software into self-managing, self-scaling, and self-healing storage services. 
 It does this by automating deployment, bootstrapping, configuration, provisioning, scaling, upgrading, migration, disaster recovery, monitoring, and resource management. 
-Rook uses the facilities provided by the underlying cloud-native container management, scheduling and orchestration platform to perform its duties.
+Rook uses the facilities provided by the underlying cloud-native container management, scheduling, and orchestration platform to perform its duties.
 Rook integrates deeply into cloud-native environments leveraging extension points and providing a seamless experience for scheduling, lifecycle management, resource management, security, monitoring, and user experience.
 Rook is hosted by the Cloud Native Computing Foundation (CNCF) as an incubating level project.
 
@@ -80,7 +81,7 @@ As a developer or user of “Popperized” container-native projects, users need
 
 # Stages of a Ceph experiment
 
-In this section, we discuss how the different stages of a Ceph experiment was automated and made reproducible with Popper.
+In this section, we discuss how the different stages of a Ceph experiment were automated and made reproducible with Popper.
 
 ## Setting Up a Kubernetes Cluster
 
@@ -90,7 +91,7 @@ The workflows leverage Geni-Lib to programmatically allocate nodes on CloudLab a
 In our case, we used the River SSL Kubernetes cluster at UChicago [@river] for setting up and benchmarking our Ceph clusters.
 Kubernetes clusters should ideally have a monitoring infrastructure setup to monitor several system parameters in real-time and also record them while running experiments. 
 We used Prometheus [@turnbull2018monitoring] and Grafana [@brattstrom2017scalable] to set up monitoring as they are the industry standards and hence wrote workflows for deploying their corresponding operators on a Kubernetes cluster.
-A Grafana dashboard snapshot showing the CPU usage, Memory pressure and the Network saturation while running our experiments is given here. [^ourdashboard]
+A Grafana dashboard snapshot showing the CPU usage, memory pressure, and the Network saturation while running our experiments is given here. [^ourdashboard]
 
 ![The grafana dashboard from our experiment.](./figures/monitoring1.png){#fig:grafana .center height=25% width=50%}
 
