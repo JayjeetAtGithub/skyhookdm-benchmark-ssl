@@ -1,12 +1,15 @@
 ---
 title: "Reproducible, Large-Scale Experiments with SkyhookDM using Popper"
+author: Jayjeet Chakraborty
 ---
 
 # Introduction
 
-This work was done as a part of the IRIS-HEP Fellowship for Summer 2020 in collaboration with CROSS, UCSC.
+This work was done as a part of the IRIS-HEP Fellowship for Summer 2020 under the mentorship of Carlos Maltzahn, Ivo Jimenez and Jeff LeFevre from CROSS, UC Santa Cruz.
 The project was aimed at automating the SkyhookDM experimentation workflow using Popper and benchmarking a SkyhookDM deployment by running queries on large datasets.
-The code for this project can be found [here](https://github.com/uccross/skyhookdm-workflows).
+The code for this project can be found here [^project].
+
+[^project]: <https://github.com/uccross/skyhookdm-workflows/tree/master/rook>
 
 # The Problem and Our Solution {#sec:probsol}
 
@@ -87,36 +90,11 @@ The workflows leverage Geni-Lib to programmatically allocate nodes on CloudLab a
 In our case, we used the River SSL Kubernetes cluster at UChicago [@river] for setting up and benchmarking our Ceph clusters.
 Kubernetes clusters should ideally have a monitoring infrastructure setup to monitor several system parameters in real-time and also record them while running experiments. 
 We used Prometheus [@turnbull2018monitoring] and Grafana [@brattstrom2017scalable] to set up monitoring as they are the industry standards and hence wrote workflows for deploying their corresponding operators on a Kubernetes cluster.
-The workflow for setting up monitoring is shown in @Lst:mon.
+A Grafana dashboard snapshot showing the CPU usage, Memory pressure and the Network saturation while running our experiments is given here. [^ourdashboard]
 
-```{#lst:mon .yaml caption="Popper workflow for setting up Monitoring."}
-options:
-  env:
-    KUBECONFIG: ./kubeconfig/config
+![The grafana dashboard from our experiment.](./figures/monitoring1.png){#fig:grafana .center height=25% width=50%}
 
-steps:
-- id: setup
-  uses: docker://bitnami/kubectl:1.17.4
-  runs: [bash, -euc]
-  args:
-  - |
-    kubectl create -f ./kube-prometheus/manifests/setup
-    until kubectl get servicemonitors --all-namespaces ; 
-    do date; 
-    sleep 1; 
-    echo ""; 
-    done
-    kubectl create -f ./kube-prometheus/manifests/
-
-- id: teardown
-  uses: docker://bitnami/kubectl:1.17.4
-  runs: [bash, -euc]
-  args:
-  - |
-    kubectl delete --ignore-not-found 
-    -f ./kube-prometheus/manifests/ 
-    -f ./kube-prometheus/manifests/setup
-```
+[^ourdashboard]: <https://bit.ly/3kYdquj>
 
 ## Baselining the Kubernetes Cluster
 
@@ -125,103 +103,15 @@ In the case of storage systems, usually the Disks or the Network stack act as th
 So, we implemented workflows to baseline a Kubernetes cluster in terms of the Disk and Network bandwidth of the underlying nodes.
 Kubestone [@kubestone], which is a benchmarking operator for Kubernetes, was used in these workflows as it provides operators for running blockdevice tests with `fio` and Network benchmarks using `iperf`. 
 
-The fio benchmark workflow shown in @Lst:fio, launches client pods on different nodes and benchmarks the R/W bandwidth of the blockdevices while performing parameter sweeps over IO depth, job count, block size, etc. 
+The fio benchmark workflow deploys client pods on different nodes and benchmarks the R/W bandwidth of the blockdevices while performing parameter sweeps over IO depth, job count, block size, etc. 
 The parameter sweeps allow capturing performance variation with different parameters, where the different sets of parameters can be mapped to real workloads while running Ceph benchmarks.
 On running this workflow to benchmark the blockdevices in our Kubernetes deployment, the seq. read bandwidth was found to be ~410 MB/s on keeping the CPU busy with 8 fio jobs and an IO depth 32.
 
-```{#lst:fio .yaml caption="Popper workflow for Fio benchmarks."}
-options:
-  env:
-    KUBECONFIG: ./kubeconfig/config
-    BLOCKDEVICES: $_BLOCKDEVICES
-    BLOCKSIZE: '4k 32k 128k 1m 4m'
-    PV_SIZE: 4Gi
-    IO_DEPTH: '32'
-    DURATION: '120'
-    IO_ENGINE: libaio
-    NUM_JOBS: '8'
-    MODES: 'read write randread randwrite'
-    HOSTNAME: $_HOSTNAME
+![Sequential Read bandwidth of the SSD blockdevice](./figures/disk.png){#fig:disk .center height=45% width=50%}
 
-steps:
-- id: bootstrap-config
-  uses: docker://biowdl/pyyaml:3.13-py37-slim
-  runs: [python]
-  args: [./kubestone_fio/scripts/bootstrap.py]
-
-- id: start
-  uses: docker://bitnami/kubectl:1.17.4
-  runs: [bash, -euc]
-  args:
-  - |
-    kubectl apply -n kubestone -f ./kubestone_fio/pv.yaml
-    kubectl apply -n kubestone -f ./kubestone_fio/pvc.yaml
-    kubectl apply -n kubestone -f ./kubestone_fio/job.yaml
-- id: run-benchmarks
-  uses: docker://bitnami/kubectl:1.17.4
-  runs: [./kubestone_fio/scripts/run_benchmarks.sh]
-
-- id: download-results
-  uses: docker://bitnami/kubectl:1.17.4
-  runs: [./kubestone_fio/scripts/download_results.sh]
-
-- id: plot-results
-  uses: docker://getpopper/fio-plot:3.12-2
-  runs: [./kubestone_fio/scripts/plot_results.sh]
-
-- id: teardown
-  uses: docker://bitnami/kubectl:1.17.4
-  runs: [bash, -euc]
-  args:
-  - |
-    kubectl delete -n kubestone -f ./kubestone_fio/job.yaml
-    kubectl delete -n kubestone -f ./kubestone_fio/pvc.yaml
-    kubectl delete -n kubestone -f ./kubestone_fio/pv.yaml
-```
-
-![Sequential Read bandwidth of the SSD blockdevice](./figures/disk.png){#fig:disk .center height=25% width=50%}
-
-Similarly, the iperf benchmark workflow shown in @Lst:iperf launches client and server pods on distinct nodes to measure the bandwidth of the link between them.
+Similarly, the iperf benchmark workflow deploys client and server pods on distinct nodes to measure the bandwidth of the link between them.
 The link bandwidth between the node that was used as the client and the nodes that were used as the OSDs in our deployment was found to be around 8-8.5 Gb/s.
 Although the theoretical bandwidth of the inter-node links was 10 Gb/s, the measured bandwidth was found slightly lower than it due to the overhead of the underlying Kubernetes network stack, which in this case was managed by Calico.
-
-
-```{#lst:iperf .yaml caption="Popper workflow for Iperf benchmarks."}
-options:
-  env:
-    KUBECONFIG: ./kubeconfig/config
-    SERVER: $_SERVER
-    CLIENT: $_CLIENT
-
-steps:
-- id: bootstrap-config
-  uses: docker://biowdl/pyyaml:3.13-py37-slim
-  runs: [python]
-  args: [./kubestone_iperf/scripts/bootstrap.py]
-
-- id: start
-  uses: docker://bitnami/kubectl:1.17.4
-  args: [apply, -n, kubestone, -f, 
-         ./kubestone_iperf/iperf.yaml]
-
-- id: download-results
-  uses: docker://bitnami/kubectl:1.17.4
-  runs: [./kubestone_iperf/scripts/download_results.sh]
-
-- id: plot-results
-  uses: docker://jupyter/datascience-notebook:python-3.8.5
-  runs: [jupyter]
-  args: ["nbconvert", "--execute", "--to=notebook", 
-         "./kubestone_iperf/notebook/plot.ipynb"]
-  options:
-    ports:
-      8888/tcp: 8888
-
-- id: teardown
-  uses: docker://bitnami/kubectl:1.17.4
-  args: [delete, -n, kubestone, -f, 
-         ./kubestone_iperf/iperf.yaml]
-```
 
 ![Bandwidth of the link between the Client and OSD nodes](./figures/network.png){#fig:network .center height=25% width=50%}
 
@@ -236,6 +126,8 @@ We initially began the experiment with a single OSD and gradually scaled it up t
 The OSD's disk became the bottleneck while running the benchmarks on a single OSD as the throughput was around 390 MB/s, which was not enough to saturate the network.
 The RADOS seq. read throughput was found to be slightly less than that of the blockdevice seq. read and this observation can be attributed to the overhead of the Ceph bluestore over the blockdevice.
 As shown in @Fig:rados, we observed a significant throughput increase as we scaled out from 1 to 4 OSDs. 
+
+![Cumulative R/W throughput from 5 OSDs](./figures/5osds.png){#fig:5osds .center height=25% width=50%}
 
 ![RADOS througout w.r.t. to OSD count](./figures/rados.png){#fig:rados .center height=25% width=50%}
 
@@ -269,11 +161,6 @@ We discuss the different stages in a Ceph experimentation workflow and also pres
 
 As future work, we aim to add workflows to automate other categories of Ceph benchmarks like CephFS and RBD benchmarks.
 Since this project explores the possibilities of making systems research automated and reproducible, we look forward to "Popperize" experiments on other popular systems for e.g. key-value stores like RocksDB, databases like ScyllaDB, etc.  
-
-<!--
-TODO: 
-3) Add more details about the workflows
--->
 
 # References {#sec:references}
 \footnotesize
