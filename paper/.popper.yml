@@ -6,13 +6,10 @@ steps:
     "--standalone",
     "--metadata=monofont-size:scriptsize",
     "--from=markdown+smart",
-    "--template=pandoc/template.latex",
-    "--csl=pandoc/IEEE.csl",
-    "--output=paper.pdf",
+    "--output=report.pdf",
     "--highlight-style=tango",
     "--bibliography=refs.bib",
-    "--metadata=IEEETran:true",
-    "--metadata=documentclass:IEEETran",
+    "--metadata=documentclass:scrartcl",
     "--metadata=classoption:conference",
     "--metadata=natbib:false",
     "--metadata=usedefaultspacing:false",
@@ -21,5 +18,5 @@ steps:
     "--filter=pandoc/pandoc-tabularize.py",
     "--filter=pandoc-crossref",
     "--filter=pandoc-citeproc",
-    "paper.md"
+    "report.md"
   ]
