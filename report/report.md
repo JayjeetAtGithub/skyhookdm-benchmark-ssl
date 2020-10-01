@@ -28,7 +28,7 @@ Since Popper [@popperpaper] [@systemslabpopper] is good at automating experiment
 Using Popper, we coalesced a long list of Ceph experimentation commands and guides into a couple of Popper workflows, that can be easily executed on any machine to perform Ceph experiments, thus automating all the wasteful manual work and allowing researchers to focus on their experimentation logic instead. 
 Besides workflows for baselining the Kubernetes and Ceph cluster, we also built workflows to benchmark the performance of SkyhookDM, a library that when added to Ceph allows pushing down queries to the storage and querying tabular data from objects.
 We measured the performance gained by pushing down query processing to the storage side and also the overhead of the SkyhookDM layer over vanilla Ceph.
-The workflows also allow users to scale the experiments as required by providing environment variables to control experiment specific parameters like the amount of data to run queries on, etc.
+The workflows also allow users to scale the experiments as required by providing substitution variables to control experiment specific parameters like the amount of data to run queries on, number of threads to use, etc.
 
 # Background {#sec:background}
 
@@ -41,10 +41,9 @@ This makes Ceph ideal for cloud, Openstack, Kubernetes, and other microservice a
 ## SkyhookDM
 
 SkyhookDM [@lefevre2020skyhookdm] is a cloud storage system that leverages "programmable storage" capabilities to enhance data management directly within the storage layer of a distributed object storage system such as Ceph. 
-The goal of Skyhook is to allow users to transparently grow and shrink their data storage and processing needs as demands change.  
-Skyhook utilizes and extends Ceph distributed object storage with customized C++ "object classes" that enable database operations such as SELECT, PROJECT, AGGREGATE to be offloaded (i.e., pushed down) directly into the object storage layer.  
-We are developing custom user-defined functions (UDFs) to enable domain-specific processing as well. 
-SkyhookDM also enables data management tasks to be executed directly within storage such as local indexing and data redistribution or reformatting (row/col) to support dynamic data management in the cloud.  
+The goal of Skyhook is to allow users to transparently grow and shrink their data storage and processing needs as demands change.
+Skyhook utilizes and extends Ceph distributed object storage with customized C++ "object classes" that enable database operations such as SELECT, PROJECT, AGGREGATE to be offloaded (i.e., pushed down) directly into the object storage layer.
+SkyhookDM also enables data management tasks to be executed directly within storage such as local indexing and data redistribution or reformatting (row/col) to support dynamic data management in the cloud.
 These tasks operate directly on objects at the single object or cross-object level.
 
 ## Rook
@@ -120,7 +119,7 @@ Although the theoretical bandwidth of the inter-node links was 10 Gb/s, the meas
 
 Ceph was deployed on our Kubernetes cluster using Rook [@rook], which is a cloud-native storage orchestrator for Kubernetes to make storage systems self-healing, self-managing and self-scaling. 
 Rook deploys and manages the Ceph daemons like OSDs, MONs, etc. as pods. 
-Our Ceph deployment comprised of 3 MONs and 4 OSDs, where each OSD was deployed on a distinct node and on a single blockdevice. 
+Our Ceph deployment comprised of 3 MONs and 5 OSDs, where each OSD was deployed on a distinct node and on a single blockdevice.
 To find out the R/W throughput of the Ceph object store, the overhead it incurs on the raw blockdevices, and the component that becomes the bottleneck, we benchmarked RADOS [@weil2007rados], the object store interface of Ceph using the `rados bench` utility provided by Ceph.
 We ran the benchmarks by reading/writing objects of size 10MB using all the cores of the client. 
 We initially began the experiment with a single OSD and gradually scaled it up to 5 OSDs in order to capture the peak throughput and the throughput trend w.r.t OSD count.
