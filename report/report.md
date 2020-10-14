@@ -145,7 +145,7 @@ As shown in @Fig:rados, we observed a significant throughput increase as we scal
 
 ![RADOS througout w.r.t. to OSD count](./figures/rados.png){#fig:rados .center height=25% width=50%}
 
-But when we scaled out to 5 OSDs, the throughput increase was minute and was stagnant at  ~1000 MB/s. 
+But when we scaled out to 5 OSDs, the throughput increase was minute and was stagnant at ~1000 MB/s as shown in @Fig:5osds.
 Since the network bandwidth was around 8–8.5 Gb/s, we immediately realized that the bottleneck has shifted from the storage to the network. 
 The CPU usage, memory pressure, and network traffic were also monitored while running the benchmarks. 
 Only the link between the client and the OSDs was found to be saturated.
