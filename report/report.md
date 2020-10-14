@@ -1,12 +1,11 @@
 ---
-title: "Reproducible, Large-Scale Experiments with SkyhookDM using Popper"
+title: "Reproducible, Scalable Benchmarks for SkyhookDM using Popper"
 author: Jayjeet Chakraborty
 ---
 
 # Introduction
 
-This work was done as a part of the IRIS-HEP Fellowship for Summer 2020 under the mentorship of Carlos Maltzahn, Ivo Jimenez, and Jeff LeFevre from CROSS, UC Santa Cruz.
-The project was aimed at automating the SkyhookDM experimentation workflow using Popper and benchmarking a SkyhookDM deployment by running queries on tabular datasets.
+This project was aimed at automating a high-level SkyhookDM benchmark and experimentation workflow using Popper and benchmarking a SkyhookDM deployment by running queries on tabular datasets.
 The code for this project can be found here [^project].
 
 [^project]: <https://github.com/uccross/skyhookdm-workflows/tree/master/rook>
@@ -74,11 +73,26 @@ In practice, when developers work following the container-native paradigm, they 
 Keeping track of which docker commands were executed, in which order, and which flags were passed to each, can quickly become unmanageable, difficult to document (think of outdated README instructions), and error-prone. 
 
 The goal of Popper is to bring order to this chaotic scenario by providing a framework for clearly and explicitly defining container-native tasks. 
-You can think of Popper as a tool for wrapping all these manual tasks in a lightweight, machine-readable, self-documented format (YAML).
-While this sounds simple at first, it has significant implications: results in time-savings, improve communication and in general unifies development, testing, and deployment workflows. 
-As a developer or user of “Popperized” container-native projects, users need to learn one tool and leave the execution details to Popper, whether is to build and tests applications locally in containers, on a remote CI server, or a Kubernetes cluster.
+One can think of Popper as a tool for wrapping all these manual tasks in a lightweight, machine-readable, self-documented format (YAML).
+An example Popper workflow is shown in @Lst:wf-example which downloads a dataset in CSV format and generates its transpose.
 
-# Stages of a Ceph experiment
+```{#lst:wf-example .yaml caption="A two-step example Popper workflow."}
+steps:
+# download CSV file with data on global CO2 emissions
+- id: download
+  uses: docker://byrnedo/alpine-curl:0.1.8
+  args: [-L, https://git.io/JUcRU, -o, global.csv]
+
+# obtain the transpose of the global CO2 emissions table
+- id: get-transpose
+  uses: docker://getpopper/csvtool:2.4
+  args: [transpose, global.csv, -o, global_transposed.csv]
+```
+
+While this sounds simple at first, it has significant implications: results in time-savings, improve communication and in general unifies development, testing, and deployment workflows. 
+As a developer or user of “Popperized” container-native projects, users need to learn one tool and leave the execution details to Popper, whether is to build and tests applications locally in containers, on a remote CI server, on a Slurm cluster, or a Kubernetes cluster.
+
+# Stages of a Benchmarking experiment on Ceph {#sec:stages}
 
 In this section, we discuss how the different stages of a Ceph experiment were automated and made reproducible with Popper.
 
@@ -90,9 +104,9 @@ The workflows leverage Geni-Lib to programmatically allocate nodes on CloudLab a
 In our case, we used the River SSL Kubernetes cluster at UChicago [@river] for setting up and benchmarking our Ceph clusters.
 Kubernetes clusters should ideally have a monitoring infrastructure setup to monitor several system parameters in real-time and also record them while running experiments. 
 We used Prometheus [@turnbull2018monitoring] and Grafana [@brattstrom2017scalable] to set up monitoring as they are the industry standards and hence wrote workflows for deploying their corresponding operators on a Kubernetes cluster.
-A Grafana dashboard snapshot showing the CPU usage, memory pressure, and the Network saturation while running our experiments is given here. [^ourdashboard]
+A Grafana dashboard snapshot as in @Fig:grafana, showing the CPU usage, memory pressure, and the Network saturation while running our experiments is given here. [^ourdashboard]
 
-![The grafana dashboard from our experiment.](./figures/monitoring1.png){#fig:grafana .center height=25% width=50%}
+![The grafana dashboard from our experiment](./figures/monitoring1.png){#fig:grafana .center height=25% width=50%}
 
 [^ourdashboard]: <https://bit.ly/3kYdquj>
 
@@ -105,17 +119,19 @@ Kubestone [@kubestone], which is a benchmarking operator for Kubernetes, was use
 
 The fio benchmark workflow deploys client pods on different nodes and benchmarks the R/W bandwidth of the blockdevices while performing parameter sweeps over IO depth, job count, block size, etc. 
 The parameter sweeps allow capturing performance variation with different parameters, where the different sets of parameters can be mapped to real workloads while running Ceph benchmarks.
-On running this workflow to benchmark the blockdevices in our Kubernetes deployment, the seq. read bandwidth was found to be ~410 MB/s on keeping the CPU busy with 8 fio jobs and an IO depth 32.
+On running this workflow to benchmark the blockdevices in our Kubernetes deployment, the seq. read bandwidth was found to be ~410 MB/s on keeping the CPU busy with 8 fio jobs and an IO depth 32 as given in @Fig:disk.
 
 ![Sequential Read bandwidth of the SSD blockdevice](./figures/disk.png){#fig:disk .center height=45% width=50%}
 
 Similarly, the iperf benchmark workflow deploys client and server pods on distinct nodes to measure the bandwidth of the link between them.
-The link bandwidth between the node that was used as the client and the nodes that were used as the OSDs in our deployment was found to be around 8-8.5 Gb/s.
+The link bandwidth between the node that was used as the client and the nodes that were used as the OSDs in our deployment was found to be around 8-8.5 Gb/s as shown in @Fig:network.
 Although the theoretical bandwidth of the inter-node links was 10 Gb/s, the measured bandwidth was found slightly lower than it due to the overhead of the underlying Kubernetes network stack, which in this case was managed by Calico.
 
 ![Bandwidth of the link between the Client and OSD nodes](./figures/network.png){#fig:network .center height=25% width=50%}
 
 ## Benchmarking the Ceph Object Store Interface, RADOS
+
+![Cumulative R/W throughput from 5 OSDs](./figures/5osds.png){#fig:5osds .center height=25% width=50%}
 
 Ceph was deployed on our Kubernetes cluster using Rook [@rook], which is a cloud-native storage orchestrator for Kubernetes to make storage systems self-healing, self-managing and self-scaling. 
 Rook deploys and manages the Ceph daemons like OSDs, MONs, etc. as pods. 
@@ -127,8 +143,6 @@ The OSD's disk became the bottleneck while running the benchmarks on a single OS
 The RADOS seq. read throughput was found to be slightly less than that of the blockdevice seq. read and this observation can be attributed to the overhead of the Ceph bluestore over the blockdevice.
 As shown in @Fig:rados, we observed a significant throughput increase as we scaled out from 1 to 4 OSDs. 
 
-![Cumulative R/W throughput from 5 OSDs](./figures/5osds.png){#fig:5osds .center height=25% width=50%}
-
 ![RADOS througout w.r.t. to OSD count](./figures/rados.png){#fig:rados .center height=25% width=50%}
 
 But when we scaled out to 5 OSDs, the throughput increase was minute and was stagnant at  ~1000 MB/s. 
@@ -136,7 +150,7 @@ Since the network bandwidth was around 8–8.5 Gb/s, we immediately realized tha
 The CPU usage, memory pressure, and network traffic were also monitored while running the benchmarks. 
 Only the link between the client and the OSDs was found to be saturated.
 
-## Case Study: SkyhookDM Benchmarks on River SSL Cluster
+## Benchmarking SkyhookDM on the River SSL Kubernetes Cluster
 
 ![Time spent in querying 1%, 10%, and 100% data with processing in client and storage side](./figures/skyhook.png){#fig:skyhook .center height=25% width=50%}
 
@@ -152,7 +166,7 @@ As the total dataset size was around 210 GB and the time spent in fetching and q
 So, the network was again the bottleneck. 
 From @Fig:rados and @Fig:skyhook, the overhead of SkyhookDM while querying the data, was found to be negligible since both vanilla Ceph and SkyhookDM had nearly the same read throughput.
 
-# Conclusion and Future Work
+# Conclusion and Future Work {#sec:conclusion-and-future-work}
 
 In this report, we discuss how we automated a Ceph experimentation workflow with the help of Popper workflows.
 We also present the results obtained from benchmarking a SkyhookDM deployment using the Popper workflows on the River SSL cluster.
@@ -161,6 +175,14 @@ We discuss the different stages in a Ceph experimentation workflow and also pres
 
 As future work, we aim to add workflows to automate other categories of Ceph benchmarks like CephFS and RBD benchmarks.
 Since this project explores the possibilities of making systems research automated and reproducible, we look forward to "Popperize" experiments on other popular systems for e.g. key-value stores like RocksDB, databases like ScyllaDB, etc.  
+
+# Acknowledgements {#sec:ack}
+
+A huge thanks to my mentors Carlos Maltzahn, Ivo Jimenez, and Jeff LeFevre for their guidance throughout the project duration.
+This work was partially funded by the NSF Awards #OAC-1836650 (IRIS-HEP [^iris-hep]) and #CNS-1705021, as well as by the Center for Research in Open Source Software (CROSS [^cross]).
+
+[^cross]: <https://cross.ucsc.edu>
+[^iris-hep]: <https://iris-hep.org>
 
 # References {#sec:references}
 \footnotesize

@@ -11,6 +11,7 @@ steps:
     "--bibliography=refs.bib",
     "--metadata=documentclass:scrartcl",
     "--metadata=classoption:conference",
+    "--csl=pandoc/IEEE.csl",    
     "--metadata=natbib:false",
     "--metadata=usedefaultspacing:false",
     "--metadata=numbersections:true",
