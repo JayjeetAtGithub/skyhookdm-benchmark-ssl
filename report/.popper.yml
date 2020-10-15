@@ -4,6 +4,7 @@ steps:
   runs: [
     "pandoc/entrypoint.sh",
     "--standalone",
+    "--variable=urlcolor:cyan",
     "--metadata=monofont-size:scriptsize",
     "--from=markdown+smart",
     "--output=report.pdf",
