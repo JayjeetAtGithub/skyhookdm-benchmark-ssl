@@ -105,9 +105,9 @@ The workflows leverage Geni-Lib to programmatically allocate nodes on CloudLab a
 In our case, we used the River SSL Kubernetes cluster at UChicago [@river] for setting up and benchmarking our Ceph clusters.
 Kubernetes clusters should ideally have a monitoring infrastructure setup to monitor several system parameters in real-time and also record them while running experiments. 
 We used Prometheus [@turnbull2018monitoring] and Grafana [@brattstrom2017scalable] to set up monitoring as they are the industry standards and hence wrote workflows for deploying their corresponding operators on a Kubernetes cluster.
-A Grafana dashboard snapshot as in @Fig:grafana, showing the CPU usage, memory pressure, and the Network saturation while running our experiments is given here. [^ourdashboard]
+A Grafana dashboard snapshot as in @Fig:grafana, showing the CPU usage, memory pressure, and the Network saturation while running our experiments can be found at this [link].
 
-[^ourdashboard]: <https://bit.ly/3kYdquj>
+[link]: <https://bit.ly/3kYdquj>
 
 ## Baselining the Kubernetes Cluster
 
