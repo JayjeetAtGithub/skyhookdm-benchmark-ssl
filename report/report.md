@@ -1,13 +1,14 @@
 ---
 title: "Reproducible, Scalable Benchmarks for SkyhookDM using Popper"
 author: Jayjeet Chakraborty
+abstract: |
+  Getting started with experimenting with complex software systems requires quite some pre-requisite steps to get right.
+  Preparing an experiment environment requires setting up infrastructure and deploying the software system, baselining the infrastructure, installing software dependencies and tools, running experiment commands and scripts iteratively, manually plotting results, among others.
+  Performing these high-level steps manually can be cumbersome and error-prone.
+  This same scenario applies to researchers starting to experiment with Ceph or SkyhookDM which is an extension for Ceph to run queries on tabular datasets stored as objects.
+  In this report, we present our work on automating a high-level SkyhookDM experimentation workflow using the Popper, the container-native workflow automation engine.
+  We describe how we built reproducible and scalable Popper workflows for every high-level stage of a SkyhookDM experiment and also present the results of benchmarking a SkyhookDM deployment along with a detailed discussion.
 ---
-
-This project was aimed at automating a high-level SkyhookDM experimentation workflow using Popper and benchmarking a SkyhookDM deployment by running queries on tabular datasets.
-This project was done as a part of the IRIS-HEP fellowship during Summer 2020.
-The code for this project can be found [here].
-
-[here]: <https://github.com/uccross/skyhookdm-workflows/tree/master/rook>
 
 # Introduction {#sec:intro}
 
@@ -171,6 +172,7 @@ In this report, we discuss how we automated a Ceph experimentation workflow with
 We also present the results obtained from benchmarking a SkyhookDM deployment using the Popper workflows on the River SSL cluster.
 We start by describing Popper and how it helps in building automated and reproducible workflows.
 We discuss the different stages in a Ceph experimentation workflow and also present and discuss the observations of running the benchmarks on our Ceph and SkyhookDM deployments.
+The code for this project can be found [here].
 
 As future work, we aim to add workflows to automate other categories of Ceph benchmarks like CephFS and RBD benchmarks.
 Since this project explores the possibilities of making systems research automated and reproducible, we look forward to "Popperize" experiments on other popular systems for e.g. key-value stores like RocksDB, databases like ScyllaDB, etc.  
@@ -180,6 +182,7 @@ Since this project explores the possibilities of making systems research automat
 A huge thanks to my mentors Carlos Maltzahn, Ivo Jimenez, and Jeff LeFevre for their guidance throughout the project duration.
 This work was partially funded by the NSF Awards #OAC-1836650 (IRIS-HEP [^iris-hep]) and #CNS-1705021, as well as by the Center for Research in Open Source Software (CROSS [^cross]).
 
+[here]: <https://github.com/uccross/skyhookdm-workflows/tree/master/rook>
 [^cross]: <https://cross.ucsc.edu>
 [^iris-hep]: <https://iris-hep.org>
 
