@@ -15,7 +15,7 @@ abstract: |
 For someone getting started in experimenting with Ceph, it can be a bit overwhelming as there are a lot of steps that one needs to execute and get right before they run the actual experiments and get results. 
 At a high-level, the steps that are generally included in a Ceph experimentation workflow are listed below:
 
-* Booting up VMs or Bare metal nodes on Cloud providers like AWS, GCP and CloudLab.
+* Booting up VMs or Bare metal nodes on Cloud providers like AWS, GCP, and CloudLab.
 * Deploying Kubernetes and baselining the cluster.
 * Compiling and deploying Ceph.
 * Baselining the Ceph deployment.
@@ -89,6 +89,12 @@ steps:
   args: [transpose, global.csv, -o, global_transposed.csv]
 ```
 
+A Popper workflow can be executed with a single command similar to this,
+```
+$ popper run -f wf.yml
+```
+
+
 While this sounds simple at first, it has significant implications: results in time-savings, improve communication and in general unifies development, testing, and deployment workflows. 
 As a developer or user of “Popperized” container-native projects, users need to learn one tool and leave the execution details to Popper, whether is to build and tests applications locally in containers, on a remote CI server, on a Slurm cluster or a Kubernetes cluster.
 
@@ -124,6 +130,7 @@ Kubestone [@kubestone], which is a benchmarking operator for Kubernetes, was use
 The fio benchmark workflow deploys client pods on different nodes and benchmarks the R/W bandwidth of the blockdevices while performing parameter sweeps over IO depth, job count, block size, etc. 
 The parameter sweeps allow capturing performance variation with different parameters, where the different sets of parameters can be mapped to real workloads while running Ceph benchmarks.
 On running this workflow to benchmark the blockdevices in our Kubernetes deployment, the seq. read bandwidth was found to be ~410 MB/s on keeping the CPU fairly busy with 8 fio jobs and an IO depth 32 as given in @Fig:disk.
+Using more number of jobs in a fio benchmark helps mimic the stress that will be exerted on the blockdevice when multiple clients try reading and writing in an actual application.
 
 Similarly, the iperf benchmark workflow deploys client and server pods on distinct nodes to measure the bandwidth of the link between them.
 The link bandwidth between the node that was used as the client and the nodes that were used as the OSDs in our deployment was found to be around 8-8.5 Gb/s as shown in @Fig:network.
